@@ -1,0 +1,20 @@
+{
+    "profile": "Профиль:\nИмя: {name}\nОчки: {points}\nСтрик: {streak}\nВыполненные задания: {tasks_completed}\nМесто: {rank}",
+    "add_friends": "Добавить друзей",
+    "get_tasks": "Получить задания на сегодня",
+    "leaderboard_header": "Таблица лидеров:\n",
+
+    "task_instruction": "Как делать упражнение",
+    "task_done": "Я сделал это",
+
+    "task_pushups": "Сделайте {number} отжиманий",
+    "task_squats": "Сделайте {number} приседаний",
+    "task_diamond_pushups": "Сделайте {number} отжиманий в узком хвате (алмазные отжимания)",
+    "task_lunges": "Сделайте {number} выпадов (на каждую ногу)",
+    "task_plank": "Удерживайте планку в течение {time} секунд",
+    "task_mountain_climbers": "Сделайте {number} подъёмов коленей в положении планки",
+    "task_high_knees": "Бег на месте, поднимая колени высоко, в течение {time} секунд",
+    "task_jump_squats": "Сделайте {number} прыжковых приседаний",
+    "task_crunches": "Сделайте {number} скручиваний",
+    "task_burpees": "Сделайте {number} бёрпи"
+}

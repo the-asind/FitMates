@@ -1,0 +1,20 @@
+{
+    "profile": "Profile:\nName: {name}\nPoints: {points}\nStreak: {streak}\nTasks Completed: {tasks_completed}\nRank: {rank}",
+    "add_friends": "Add Friends",
+    "get_tasks": "Get Today's Tasks",
+    "leaderboard_header": "Leaderboard:\n",
+
+    "task_instruction": "How to do that?",
+    "task_done": "Task done",
+
+    "task_pushups": "Do {number} push-ups",
+    "task_squats": "Do {number} squats",
+    "task_diamond_pushups": "Do {number} diamond push-ups",
+    "task_lunges": "Do {number} lunges (each leg)",
+    "task_plank": "Hold a plank for {time} seconds",
+    "task_mountain_climbers": "Do {number} mountain climbers",
+    "task_high_knees": "Run in place, lifting knees high for {time} seconds",
+    "task_jump_squats": "Do {number} jump squats",
+    "task_crunches": "Do {number} crunches",
+    "task_burpees": "Do {number} burpees"
+}
