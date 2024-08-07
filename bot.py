@@ -5,6 +5,7 @@ from datetime import datetime, timedelta
 import random
 
 from telegram import Update, InlineKeyboardButton, InlineKeyboardMarkup
+from telegram.constants import ParseMode
 from telegram.ext import (
     Application,
     CallbackQueryHandler,
@@ -24,7 +25,7 @@ class RemoveLinkFilter(logging.Filter):
 
 # Enable logging
 logging.basicConfig(
-    format='%(asctime)s - %(name)s - %(levelname)s - %(message)s', level=logging.DEBUG
+    format='%(asctime)s - %(name)s - %(levelname)s - %(message)s', level=logging.INFO
 )
 logger = logging.getLogger(__name__)
 
@@ -83,7 +84,7 @@ async def select_language(update: Update, context: ContextTypes.DEFAULT_TYPE) ->
 
 
 def get_user_rank(user_id):
-    return "not implemented"
+    return "coming soon"
 
 
 async def send_profile(query, context, user_id):
@@ -102,7 +103,7 @@ async def send_profile(query, context, user_id):
         tasks_completed=user['tasks_completed'],
         rank=get_user_rank(user_id)
     )
-    await query.edit_message_text(text=profile_text, reply_markup=reply_markup)
+    await query.edit_message_text(text=profile_text, reply_markup=reply_markup, parse_mode=ParseMode.HTML)
 
 
 async def add_friends(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
@@ -130,7 +131,7 @@ async def get_tasks(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
             [InlineKeyboardButton(translation['task_done'], callback_data=f"DONE_{i}")]
         ]
         reply_markup = InlineKeyboardMarkup(task_buttons)
-        await query.message.reply_text(text=task_text, reply_markup=reply_markup)
+        await query.message.reply_text(text=task_text, reply_markup=reply_markup, parse_mode=ParseMode.HTML)
 
 
 def create_daily_tasks(user_id):
