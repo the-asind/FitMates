@@ -1,33 +1,39 @@
 import sqlite3
 
+
 def init_db():
-    with sqlite3.connect("fitness_bot.db") as conn:
-        cursor = conn.cursor()
-        cursor.execute("""
-        CREATE TABLE IF NOT EXISTS users (
-            id INTEGER PRIMARY KEY,
-            username TEXT,
-            lang TEXT,
-            points INTEGER DEFAULT 0,
-            streak INTEGER DEFAULT 0,
-            tasks_completed INTEGER DEFAULT 0,
-            strength_modifier REAL DEFAULT 1.0
-        )
-        """)
-        cursor.execute("""
+    conn = sqlite3.connect('fitness_bot.db')
+    cursor = conn.cursor()
+    cursor.execute("""
+            CREATE TABLE IF NOT EXISTS users (
+                id INTEGER PRIMARY KEY,
+                username TEXT,
+                lang TEXT,
+                points INTEGER DEFAULT 0,
+                streak INTEGER DEFAULT 0,
+                tasks_completed INTEGER DEFAULT 0,
+                strength_modifier REAL DEFAULT 1.0
+            )
+            """)
+    cursor.execute('''
         CREATE TABLE IF NOT EXISTS tasks (
+            id INTEGER PRIMARY KEY,
             user_id INTEGER,
-            task TEXT,
-            status TEXT DEFAULT 'pending',
-            created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+            task_code TEXT,
+            number INTEGER,
+            status TEXT DEFAULT 'pending'
         )
-        """)
+    ''')
+    conn.commit()
+    conn.close()
+
 
 def add_user(user_id, username, lang):
     with sqlite3.connect("fitness_bot.db") as conn:
         cursor = conn.cursor()
         cursor.execute("INSERT OR IGNORE INTO users (id, username, lang) VALUES (?, ?, ?)", (user_id, username, lang))
         conn.commit()
+
 
 def get_user(id):
     conn = sqlite3.connect('fitness_bot.db')
@@ -45,11 +51,13 @@ def get_user(id):
         'strength_modifier': user[6]
     }
 
+
 def get_leaderboard():
     with sqlite3.connect("fitness_bot.db") as conn:
         cursor = conn.cursor()
         cursor.execute("SELECT username, points, streak FROM users ORDER BY points DESC")
         return cursor.fetchall()
+
 
 def update_user(user_id, points, streak, tasks_completed):
     with sqlite3.connect("fitness_bot.db") as conn:
@@ -61,23 +69,39 @@ def update_user(user_id, points, streak, tasks_completed):
         """, (points, streak, tasks_completed, user_id))
         conn.commit()
 
-def get_today_tasks(user_id):
-    with sqlite3.connect("fitness_bot.db") as conn:
-        cursor = conn.cursor()
-        cursor.execute("""
-        SELECT * FROM tasks
-        WHERE user_id = ? AND DATE(created_at) = DATE('now')
-        """, (user_id,))
-        return cursor.fetchall()
 
-def add_task(user_id, task):
-    with sqlite3.connect("fitness_bot.db") as conn:
-        cursor = conn.cursor()
-        cursor.execute("INSERT INTO tasks (user_id, task) VALUES (?, ?)", (user_id, task))
-        conn.commit()
+def add_task(user_id, task_code, number):
+    conn = sqlite3.connect('fitness_bot.db')
+    cursor = conn.cursor()
+    cursor.execute('''
+        INSERT INTO tasks (user_id, task_code, number) VALUES (?, ?, ?)
+    ''', (user_id, task_code, number))
+    conn.commit()
+    conn.close()
+
+
+def add_task(user_id, task_code, number):
+    conn = sqlite3.connect('fitness_bot.db')
+    cursor = conn.cursor()
+    cursor.execute('''
+        INSERT INTO tasks (user_id, task_code, number) VALUES (?, ?, ?)
+    ''', (user_id, task_code, number))
+    conn.commit()
+    conn.close()
+
 
 def mark_task_done(user_id, task_id):
     with sqlite3.connect("fitness_bot.db") as conn:
         cursor = conn.cursor()
         cursor.execute("UPDATE tasks SET status = 'completed' WHERE user_id = ? AND rowid = ?", (user_id, task_id))
         conn.commit()
+
+def get_today_tasks(user_id):
+    conn = sqlite3.connect('fitness_bot.db')
+    cursor = conn.cursor()
+    cursor.execute('''
+        SELECT task_code, number FROM tasks WHERE user_id = ? AND status = 'pending'
+    ''', (user_id,))
+    tasks = cursor.fetchall()
+    conn.close()
+    return tasks

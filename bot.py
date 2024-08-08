@@ -124,8 +124,8 @@ async def get_tasks(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
     lang = context.user_data.get('lang', 'en')
     translation = translations[lang]
 
-    for i, task in enumerate(tasks):
-        task_text = task[1]
+    for i, (task_code, number) in enumerate(tasks):
+        task_text = translation[task_code].format(number=number)
         task_buttons = [
             [InlineKeyboardButton(translation['task_done'], callback_data=f"DONE_{i}")]
         ]
@@ -147,12 +147,7 @@ def create_daily_tasks(user_id):
         is_time = task_info.get('is_time', False)
         amount = int(base_amount * difficulty * strength_modifier * random.uniform(0.8, 1.5))
 
-        if is_time:
-            task_text = translations[user["lang"]][task_key].format(time=amount)
-        else:
-            task_text = translations[user["lang"]][task_key].format(number=amount)
-
-        add_task(user_id, task_text)
+        add_task(user_id, task_key, amount)
 
 
 async def mark_task_done_handler(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:

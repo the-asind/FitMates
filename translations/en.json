@@ -1,5 +1,5 @@
 {
-    "profile": "🔸 <b>{name}</b> 🔸\n━━━━━━━━━━━━━━━━━━━\n💪 Points: <b>{points}</b>\n🔥 Streak: <b>{streak}</b>\n✅ Tasks Completed: <b>{tasks_completed}</b>\n🔺 Rank: <b>{rank}</b>",
+    "profile": "🔸 <b>{name}</b> 🔸\n━━━━━━━━━━━━━━━━━━━\n🔥 Streak: <b>{streak}</b>\n✅ Tasks Completed: <b>{tasks_completed}</b>\n💪 Rank: <b>{rank}</b>",
     "add_friends": "➕ Add Friends",
     "get_tasks": "☑️ Get Today's Tasks",
     "leaderboard_header": "📶 Leaderboard:\n",
