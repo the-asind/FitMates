@@ -78,7 +78,7 @@ async def select_language(update: Update, context: ContextTypes.DEFAULT_TYPE) ->
     lang = LANG_EN if query.data == str(LANG_EN) else LANG_RU
     context.user_data['lang'] = 'en' if lang == LANG_EN else 'ru'
     user_id = query.from_user.id
-    add_user(user_id, query.from_user.username, context.user_data['lang'])
+    add_user(user_id, query.from_user.first_name, context.user_data['lang'])
     await send_profile(query, context, user_id)
     return SHOWING_PROFILE
 
@@ -127,7 +127,6 @@ async def get_tasks(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
     for i, task in enumerate(tasks):
         task_text = task[1]
         task_buttons = [
-            [InlineKeyboardButton(translation['task_instruction'], callback_data=f"INSTRUCTION_{i}")],
             [InlineKeyboardButton(translation['task_done'], callback_data=f"DONE_{i}")]
         ]
         reply_markup = InlineKeyboardMarkup(task_buttons)

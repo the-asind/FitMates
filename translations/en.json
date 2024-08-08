@@ -1,10 +1,9 @@
 {
-    "profile": "ㅤ          🔸 Profile 🔸\n━━━━━━━━━━━━━━━━━━━\n💪 Name: <b>{name}</b>\n😎 Points: <b>{points}</b>\n🔥 Streak: <b>{streak}</b>\n✅ Tasks Completed: <b>{tasks_completed}</b>\n🔺 Rank: <b>{rank}</b>",
+    "profile": "🔸 <b>{name}</b> 🔸\n━━━━━━━━━━━━━━━━━━━\n💪 Points: <b>{points}</b>\n🔥 Streak: <b>{streak}</b>\n✅ Tasks Completed: <b>{tasks_completed}</b>\n🔺 Rank: <b>{rank}</b>",
     "add_friends": "➕ Add Friends",
     "get_tasks": "☑️ Get Today's Tasks",
-    "leaderboard_header": "Leaderboard:\n",
+    "leaderboard_header": "📶 Leaderboard:\n",
 
-    "task_instruction": "❓ How to do that",
     "task_done": "✅ Task done",
 
     "task_pushups": "Do <b>{number}</b> push-ups.\nKeep your body straight, lower yourself until your chest almost touches the ground, then push back up. Keep your elbows close to your body.",
