@@ -12,7 +12,8 @@ def init_db():
                 points INTEGER DEFAULT 0,
                 streak INTEGER DEFAULT 0,
                 tasks_completed INTEGER DEFAULT 0,
-                strength_modifier REAL DEFAULT 1.0
+                strength_modifier REAL DEFAULT 1.0,
+                streak_timestamp INTEGER DEFAULT 0
             )
             """)
     cursor.execute('''
@@ -23,7 +24,8 @@ def init_db():
             number INTEGER,
             multiplier REAL DEFAULT 1.0,
             created_at INTEGER,
-            status TEXT DEFAULT 'pending'
+            status TEXT DEFAULT 'pending',
+            task_index INTEGER
         )
     ''')
     conn.commit()
@@ -34,6 +36,7 @@ def add_user(user_id, username, lang):
     with sqlite3.connect("fitness_bot.db") as conn:
         cursor = conn.cursor()
         cursor.execute("INSERT OR IGNORE INTO users (id, username, lang) VALUES (?, ?, ?)", (user_id, username, lang))
+        cursor.execute("UPDATE users SET lang = ? WHERE id = ?", (lang, user_id))
         conn.commit()
 
 
@@ -72,20 +75,20 @@ def update_user(user_id, points, streak, tasks_completed):
         conn.commit()
 
 
-def add_task(user_id, task_code, number, multiplier, created_at):
+def add_task(user_id, task_code, number, multiplier, created_at, task_index):
     conn = sqlite3.connect('fitness_bot.db')
     cursor = conn.cursor()
     cursor.execute('''
-        INSERT INTO tasks (user_id, task_code, number, multiplier, created_at) VALUES (?, ?, ?, ?, ?)
-    ''', (user_id, task_code, number, multiplier, created_at))
+        INSERT INTO tasks (user_id, task_code, number, multiplier, created_at, task_index) VALUES (?, ?, ?, ?, ?, ?)
+    ''', (user_id, task_code, number, multiplier, created_at, task_index))
     conn.commit()
     conn.close()
 
 
-def mark_task_done(user_id, task_id):
+def mark_task_done(user_id, task_code):
     with sqlite3.connect("fitness_bot.db") as conn:
         cursor = conn.cursor()
-        cursor.execute("UPDATE tasks SET status = 'completed' WHERE user_id = ? AND rowid = ?", (user_id, task_id))
+        cursor.execute("DELETE FROM tasks WHERE user_id = ? AND task_code = ?", (user_id, task_code))
         conn.commit()
 
 
@@ -93,8 +96,30 @@ def get_today_tasks(user_id):
     conn = sqlite3.connect('fitness_bot.db')
     cursor = conn.cursor()
     cursor.execute('''
-        SELECT task_code, number, multiplier FROM tasks WHERE user_id = ? AND status = 'pending'
+        SELECT task_code, number, multiplier, task_index FROM tasks WHERE user_id = ? AND status = 'pending' ORDER BY task_index
     ''', (user_id,))
     tasks = cursor.fetchall()
     conn.close()
     return tasks
+
+
+def get_streak_timestamp(user_id):
+    conn = sqlite3.connect('fitness_bot.db')
+    cursor = conn.cursor()
+    cursor.execute('''
+        SELECT streak_timestamp FROM users WHERE id = ?
+    ''', (user_id,))
+    streak_timestamp = cursor.fetchone()
+    conn.close()
+    return streak_timestamp
+
+
+def update_streak_timestamp(user_id, streak_timestamp):
+    with sqlite3.connect("fitness_bot.db") as conn:
+        cursor = conn.cursor()
+        cursor.execute("""
+        UPDATE users
+        SET streak_timestamp = ?
+        WHERE id = ?
+        """, (streak_timestamp, user_id))
+        conn.commit()

@@ -5,15 +5,17 @@
     "leaderboard_header": "📶 Leaderboard:\n",
 
     "task_done": "✅ Task done",
+    "task_completed": "✅ Task completed, added <b>{score} scores!</b>",
+    "task_does_not_exist": "ℹ️ Task already done",
     "task_expired": "❌ Task time expired",
 
     "task_pushups": "Do <b>{number}</b> push-ups.\nKeep your body straight, lower yourself until your chest almost touches the ground, then push back up. Keep your elbows close to your body.",
     "task_squats": "Do <b>{number}</b> squats.\nStand with feet shoulder-width apart, lower your hips back and down as if sitting in a chair, then stand back up. Keep your knees behind your toes.",
     "task_diamond_pushups": "Do <b>{number}</b> diamond push-ups.\nPlace your hands close together under your chest, forming a diamond shape with your fingers. Lower yourself until your chest almost touches your hands, then push back up.",
     "task_lunges": "Do <b>{number}</b> lunges (each leg).\nStep forward with one leg, lowering your hips until both knees are bent at about a 90-degree angle. Push back up to the starting position and switch legs.",
-    "task_plank": "Hold a plank for <b>{time}</b> seconds.\nKeep your body in a straight line from head to heels, with your elbows directly under your shoulders. Engage your core and avoid letting your hips sag.",
+    "task_plank": "Hold a plank for <b>{number}</b> seconds.\nKeep your body in a straight line from head to heels, with your elbows directly under your shoulders. Engage your core and avoid letting your hips sag.",
     "task_mountain_climbers": "Do <b>{number}</b> mountain climbers.\nStart in a plank position, then quickly alternate bringing your knees to your chest, as if running in place.",
-    "task_high_knees": "Run in place, lifting knees high for <b>{time}</b> seconds.\nBring your knees up to waist level, pumping your arms as you run.",
+    "task_high_knees": "Run in place, lifting knees high for <b>{number}</b> seconds.\nBring your knees up to waist level, pumping your arms as you run.",
     "task_jump_squats": "Do <b>{number}</b> jump squats.\nPerform a squat, then explode upwards into a jump. Land softly and immediately go into the next squat.",
     "task_crunches": "Do <b>{number}</b> crunches.\nLie on your back with knees bent and feet flat on the floor. Lift your shoulders off the ground, squeezing your abs, then lower back down.",
     "task_burpees": "Do <b>{number}</b> burpees.\nFrom a standing position, drop into a squat, kick your feet back into a plank, do a push-up, return to squat, and jump up with arms overhead."

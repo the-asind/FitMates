@@ -15,15 +15,18 @@ from telegram.ext import (
     ContextTypes,
     ConversationHandler
 )
-from db import init_db, add_user, get_user, get_leaderboard, update_user, get_today_tasks, add_task, mark_task_done
+from db import init_db, add_user, get_user, get_leaderboard, update_user, get_today_tasks, add_task, mark_task_done, \
+    get_streak_timestamp, update_streak_timestamp
 
 import re
+
 
 class RemoveLinkFilter(logging.Filter):
     def filter(self, record):
         # Remove links starting with "https://" and ending with a space
         record.msg = re.sub(r'https:\S+ ', 'SECRET', record.msg)
         return True
+
 
 # Enable logging
 logging.basicConfig(
@@ -131,7 +134,7 @@ async def get_tasks(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
     lang = context.user_data.get('lang', 'en')
     translation = translations[lang]
 
-    for i, (task_code, number, created_at) in enumerate(tasks):
+    for i, (task_code, number, created_at, task_index) in enumerate(tasks):
         task_text = translation[task_code].format(number=number)
         task_buttons = [
             [InlineKeyboardButton(translation['task_done'], callback_data=f"MARK_TASK_DONE_{i}")]
@@ -147,7 +150,7 @@ def create_daily_tasks(user_id):
     random.shuffle(tasks_keys)
     daily_tasks = tasks_keys[:3]
 
-    for task_key in daily_tasks:
+    for task_index, task_key in enumerate(daily_tasks):
         task_info = TASKS[task_key]
         base_amount = task_info['base']
         difficulty = task_info['difficulty']
@@ -157,7 +160,7 @@ def create_daily_tasks(user_id):
         multiplier = difficulty * strength_modifier * ran
         created_at = int(datetime.now().timestamp())
 
-        add_task(user_id, task_key, amount, multiplier, created_at)
+        add_task(user_id, task_key, amount, multiplier, created_at, task_index)
 
 
 async def mark_task_done_handler(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
@@ -169,16 +172,30 @@ async def mark_task_done_handler(update: Update, context: ContextTypes.DEFAULT_T
 
     user_id = query.from_user.id
     tasks = get_today_tasks(user_id)
-    task_code, number, multiplier = tasks[task_index]
+
+    # Check if the task is already marked as done
+    task = next((task for task in tasks if task[3] == task_index), None)
+
+    if task is None:
+        lang = context.user_data.get('lang', 'en')
+        translation = translations[lang]
+        await query.edit_message_text(translation['task_does_not_exist'])
+        await asyncio.sleep(1)
+        await query.message.delete()
+        return
+
+    task_code, number, multiplier, _ = task
+
+    check_new_streak(user_id)
 
     # Get language and translation
     lang = context.user_data.get('lang', 'en')
     translation = translations[lang]
 
-    # Replace message with 'text_completed' string via lang
-    await query.edit_message_text(text=translation['task_done'], parse_mode=ParseMode.HTML)
+    score = await add_points_for_task(multiplier, task_code, user_id)
 
-    await add_points_for_task(multiplier, task_code, user_id)
+    # Mark task as done
+    await query.edit_message_text(text=translation['task_completed'].format(score=score), parse_mode=ParseMode.HTML)
 
     # Mark task in db
     mark_task_done(user_id, task_code)
@@ -198,27 +215,33 @@ async def add_points_for_task(multiplier, task_code, user_id):
     # Add points of completed task to user
     user = get_user(user_id)
     task_info = TASKS[task_code]
-    points = int(25 * multiplier * user['strength_modifier'] * (1+(log(user['streak']+1, 1.1))))
+    points = int(25 * multiplier * user['strength_modifier'] * (1 + (log(user['streak'] + 1, 1.1))))
     user['points'] += points
     user['tasks_completed'] += 1
     update_user(user_id, user['points'], user['streak'], user['tasks_completed'])
+    return points
 
 
-def update_user_points_and_streak(user_id):
-    user = get_user(user_id)
-    streak = user[4]
-    points = user[3]
-    tasks_completed = user[5]
+def check_new_streak(user_id):
+    current_timestamp = int(datetime.now().timestamp())
+    streak_timestamp = get_streak_timestamp(user_id)[0]
 
-    streak_multiplier = 1 + 0.1 * streak
-    tasks = get_today_tasks(user_id)
-    for task in tasks:
-        if task[3] == 'completed':
-            points += int(10 * streak_multiplier)
-            tasks_completed += 1
+    if streak_timestamp is None:
+        update_streak_timestamp(user_id, current_timestamp)
+        return
 
-    streak += 1
-    update_user(user_id, points, streak, tasks_completed)
+    time_diff = current_timestamp - streak_timestamp
+
+    if 86400 < time_diff < 172800 or streak_timestamp == 0:  # between 24 and 48 hours
+        user = get_user(user_id)
+        user['streak'] = 1
+        update_user(user_id, user['points'], user['streak'], user['tasks_completed'])
+    elif time_diff > 172800:  # more than 48 hours
+        user = get_user(user_id)
+        user['streak'] = 0
+        update_user(user_id, user['points'], user['streak'], user['tasks_completed'])
+
+    update_streak_timestamp(user_id, current_timestamp)
 
 
 async def leaderboard(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
