@@ -1,8 +1,6 @@
 import asyncio
 import logging
-import json
-import os
-from datetime import datetime, timedelta
+from datetime import datetime
 import random
 from math import log
 
@@ -15,33 +13,17 @@ from telegram.ext import (
     ContextTypes,
     ConversationHandler
 )
+
+from friends import add_friends, handle_invite_code
+from translations import translations
 from db import init_db, add_user, get_user, get_leaderboard, update_user, get_today_tasks, add_task, mark_task_done, \
     get_streak_timestamp, update_streak_timestamp
-
-import re
-
-
-class RemoveLinkFilter(logging.Filter):
-    def filter(self, record):
-        # Remove links starting with "https://" and ending with a space
-        record.msg = re.sub(r'https:\S+ ', 'SECRET', record.msg)
-        return True
-
 
 # Enable logging
 logging.basicConfig(
     format='%(asctime)s - %(name)s - %(levelname)s - %(message)s', level=logging.INFO
 )
 logger = logging.getLogger(__name__)
-
-# Add the filter to the logger
-logger.addFilter(RemoveLinkFilter())
-
-# Load translations
-translations = {}
-for lang in ['en', 'ru']:
-    with open(f'translations/{lang}.json', 'r', encoding='utf-8') as f:
-        translations[lang] = json.load(f)
 
 # Stages and Callback data
 SELECTING_LANGUAGE, SHOWING_PROFILE = range(2)
@@ -65,10 +47,10 @@ TASKS = {
 
 
 async def start(update: Update, context: ContextTypes.DEFAULT_TYPE) -> int:
-    """Send message on `/start`."""
     user = update.message.from_user
     logger.info("User %s started the conversation.", user.first_name)
-
+    if context.args:
+        handle_invite_code(context.args[0], user.id)
     keyboard = [
         [InlineKeyboardButton("🇺🇸 English", callback_data=str(LANG_EN))],
         [InlineKeyboardButton("🇷🇺 Русский", callback_data=str(LANG_RU))]
@@ -114,12 +96,6 @@ async def send_profile(query, context, user_id):
 
     global profile_message_query
     profile_message_query = query
-
-
-async def add_friends(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
-    query = update.callback_query
-    await query.answer()
-    await query.edit_message_text(text="Feature not implemented yet.")
 
 
 async def get_tasks(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
@@ -180,8 +156,7 @@ async def mark_task_done_handler(update: Update, context: ContextTypes.DEFAULT_T
         lang = context.user_data.get('lang', 'en')
         translation = translations[lang]
         await query.edit_message_text(translation['task_does_not_exist'])
-        await asyncio.sleep(1)
-        await query.message.delete()
+        await delete_message_later(query, 1)
         return
 
     task_code, number, multiplier, _ = task
@@ -207,8 +182,12 @@ async def mark_task_done_handler(update: Update, context: ContextTypes.DEFAULT_T
         # noinspection PyTypeChecker
         await send_profile(profile_message_query, context, user_id)
         # delete message after 3 seconds
-        await asyncio.sleep(3)
-        await query.message.delete()
+        await delete_message_later(query, 3)
+
+
+async def delete_message_later(query, delay):
+    await asyncio.sleep(delay)
+    await query.message.delete()
 
 
 async def add_points_for_task(multiplier, task_code, user_id):
@@ -265,6 +244,13 @@ def read_token_from_file(file_name='token'):
         return None
 
 
+async def go_profile(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
+    query = update.callback_query
+    await query.answer()
+    user_id = query.from_user.id
+    await send_profile(query, context, user_id)
+
+
 def main() -> None:
     """Run the bot."""
     init_db()
@@ -281,6 +267,7 @@ def main() -> None:
                 CallbackQueryHandler(add_friends, pattern=f"^{ADD_FRIENDS}$"),
                 CallbackQueryHandler(get_tasks, pattern=f"^{GET_TASKS}$"),
                 CallbackQueryHandler(mark_task_done_handler, pattern=f"^MARK_TASK_DONE_\\d+$"),
+                CallbackQueryHandler(go_profile, pattern="^GO_PROFILE$"),
             ],
         },
         fallbacks=[CommandHandler("start", start)],

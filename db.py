@@ -28,6 +28,13 @@ def init_db():
             task_index INTEGER
         )
     ''')
+    cursor.execute('''
+            CREATE TABLE IF NOT EXISTS friends (
+                user_id INTEGER,
+                friend_id INTEGER,
+                PRIMARY KEY (user_id, friend_id)
+            )
+        ''')
     conn.commit()
     conn.close()
 
@@ -123,3 +130,24 @@ def update_streak_timestamp(user_id, streak_timestamp):
         WHERE id = ?
         """, (streak_timestamp, user_id))
         conn.commit()
+
+
+# Create an accepting system from the friend-side
+def accept_friend(user_id, friend_id):
+    with sqlite3.connect("fitness_bot.db") as conn:
+        cursor = conn.cursor()
+        cursor.execute("INSERT OR IGNORE INTO friends (user_id, friend_id) VALUES (?, ?)", (user_id, friend_id))
+        conn.commit()
+
+
+def get_friends(user_id):
+    conn = sqlite3.connect('fitness_bot.db')
+    cursor = conn.cursor()
+    cursor.execute('''
+        SELECT u.username FROM friends f
+        JOIN users u ON (f.friend_id = u.id OR f.user_id = u.id)
+        WHERE (f.user_id = ? OR f.friend_id = ?) AND u.id != ?
+    ''', (user_id, user_id, user_id))
+    friends = cursor.fetchall()
+    conn.close()
+    return [friend[0] for friend in friends]

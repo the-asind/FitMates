@@ -1,8 +1,9 @@
 {
     "profile": "🔸 <b>{name}</b> 🔸\n━━━━━━━━━━━━━━━━━━━\n💪 Points: <b>{points}</b>\n🔥 Streak: <b>{streak}</b>\n✅ Tasks Completed: <b>{tasks_completed}</b>\n🔺 Rank: <b>{rank}</b>",
-    "add_friends": "➕ Add Friends",
+    "add_friends": "👥 My Friends",
     "get_tasks": "☑️ Get Today's Tasks",
     "leaderboard_header": "📶 Leaderboard:\n",
+    "go_to_profile": "🔸 Go to Profile",
 
     "task_done": "✅ Task done",
     "task_completed": "✅ Task completed, added <b>{score} scores!</b>",
@@ -18,6 +19,9 @@
     "task_high_knees": "Run in place, lifting knees high for <b>{number}</b> seconds.\nBring your knees up to waist level, pumping your arms as you run.",
     "task_jump_squats": "Do <b>{number}</b> jump squats.\nPerform a squat, then explode upwards into a jump. Land softly and immediately go into the next squat.",
     "task_crunches": "Do <b>{number}</b> crunches.\nLie on your back with knees bent and feet flat on the floor. Lift your shoulders off the ground, squeezing your abs, then lower back down.",
-    "task_burpees": "Do <b>{number}</b> burpees.\nFrom a standing position, drop into a squat, kick your feet back into a plank, do a push-up, return to squat, and jump up with arms overhead."
+    "task_burpees": "Do <b>{number}</b> burpees.\nFrom a standing position, drop into a squat, kick your feet back into a plank, do a push-up, return to squat, and jump up with arms overhead.",
 
+    "your_friends": "👥 Your friends:",
+    "no_friends": "🤨 You don't have any friends yet. Add them to compete🤼‍♀️ and motivate each other!",
+    "referral_link": "➕ <b>Add new friends! Just copy and send them next <u>link</u>:</b> "
 }
