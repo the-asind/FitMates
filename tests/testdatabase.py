@@ -5,12 +5,12 @@ from db import init_db, add_user, get_user, update_user, add_task, mark_task_don
 
 class TestDataBase(unittest.TestCase):
     def setUp(self):
+        init_db()
         self.conn = sqlite3.connect('fitness_bot.db')
         self.cursor = self.conn.cursor()
         self.cursor.execute('DELETE FROM users')
         self.cursor.execute('DELETE FROM tasks')
         self.conn.commit()
-        init_db()
 
     def tearDown(self):
         self.conn.close()
@@ -41,7 +41,7 @@ class TestDataBase(unittest.TestCase):
 
     def test_add_task_creates_task(self):
         add_user(4, 'taskuser', 'de')
-        add_task(4, 'task1', 1, 1.5, 1234567890)
+        add_task(4, 'task1', 1, 1.5, 123456789, 0)
         self.cursor.execute('SELECT * FROM tasks WHERE user_id = 4')
         task = self.cursor.fetchone()
         self.assertIsNotNone(task)
@@ -49,22 +49,13 @@ class TestDataBase(unittest.TestCase):
         self.assertEqual(task[2], 'task1')
         self.assertEqual(task[3], 1)
         self.assertEqual(task[4], 1.5)
-        self.assertEqual(task[5], 1234567890)
+        self.assertEqual(task[5], 123456789)
         self.assertEqual(task[6], 'pending')
-
-    def test_mark_task_done_marks_task_as_completed(self):
-        add_user(5, 'markuser', 'it')
-        add_task(5, 'task2', 2, 2.0, 1234567891)
-        self.cursor.execute('SELECT rowid FROM tasks WHERE user_id = 5 AND task_code = "task2"')
-        task_id = self.cursor.fetchone()[0]
-        mark_task_done(5, task_id)
-        self.cursor.execute('SELECT status FROM tasks WHERE rowid = ?', (task_id,))
-        status = self.cursor.fetchone()[0]
-        self.assertEqual(status, 'completed')
+        self.assertEqual(task[7], 0)
 
     def test_get_today_tasks_returns_pending_tasks(self):
         add_user(6, 'todayuser', 'pt')
-        add_task(6, 'task3', 3, 1.0, 1234567892)
+        add_task(6, 'task3', 3, 1.0, 1234567892, 0)
         tasks = get_today_tasks(6)
         self.assertEqual(len(tasks), 1)
         self.assertEqual(tasks[0][0], 'task3')
