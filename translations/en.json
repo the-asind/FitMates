@@ -5,6 +5,7 @@
     "leaderboard_header": "📶 Leaderboard:\n",
 
     "task_done": "✅ Task done",
+    "task_expired": "❌ Task time expired",
 
     "task_pushups": "Do <b>{number}</b> push-ups.\nKeep your body straight, lower yourself until your chest almost touches the ground, then push back up. Keep your elbows close to your body.",
     "task_squats": "Do <b>{number}</b> squats.\nStand with feet shoulder-width apart, lower your hips back and down as if sitting in a chair, then stand back up. Keep your knees behind your toes.",

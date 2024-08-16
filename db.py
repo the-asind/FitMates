@@ -21,6 +21,8 @@ def init_db():
             user_id INTEGER,
             task_code TEXT,
             number INTEGER,
+            multiplier REAL DEFAULT 1.0,
+            created_at INTEGER,
             status TEXT DEFAULT 'pending'
         )
     ''')
@@ -70,22 +72,12 @@ def update_user(user_id, points, streak, tasks_completed):
         conn.commit()
 
 
-def add_task(user_id, task_code, number):
+def add_task(user_id, task_code, number, multiplier, created_at):
     conn = sqlite3.connect('fitness_bot.db')
     cursor = conn.cursor()
     cursor.execute('''
-        INSERT INTO tasks (user_id, task_code, number) VALUES (?, ?, ?)
-    ''', (user_id, task_code, number))
-    conn.commit()
-    conn.close()
-
-
-def add_task(user_id, task_code, number):
-    conn = sqlite3.connect('fitness_bot.db')
-    cursor = conn.cursor()
-    cursor.execute('''
-        INSERT INTO tasks (user_id, task_code, number) VALUES (?, ?, ?)
-    ''', (user_id, task_code, number))
+        INSERT INTO tasks (user_id, task_code, number, multiplier, created_at) VALUES (?, ?, ?, ?, ?)
+    ''', (user_id, task_code, number, multiplier, created_at))
     conn.commit()
     conn.close()
 
@@ -96,11 +88,12 @@ def mark_task_done(user_id, task_id):
         cursor.execute("UPDATE tasks SET status = 'completed' WHERE user_id = ? AND rowid = ?", (user_id, task_id))
         conn.commit()
 
+
 def get_today_tasks(user_id):
     conn = sqlite3.connect('fitness_bot.db')
     cursor = conn.cursor()
     cursor.execute('''
-        SELECT task_code, number FROM tasks WHERE user_id = ? AND status = 'pending'
+        SELECT task_code, number, multiplier FROM tasks WHERE user_id = ? AND status = 'pending'
     ''', (user_id,))
     tasks = cursor.fetchall()
     conn.close()

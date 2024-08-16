@@ -1,8 +1,10 @@
+import asyncio
 import logging
 import json
 import os
 from datetime import datetime, timedelta
 import random
+from math import log
 
 from telegram import Update, InlineKeyboardButton, InlineKeyboardMarkup
 from telegram.constants import ParseMode
@@ -42,6 +44,8 @@ for lang in ['en', 'ru']:
 SELECTING_LANGUAGE, SHOWING_PROFILE = range(2)
 LANG_EN, LANG_RU, ADD_FRIENDS, GET_TASKS, MARK_TASK_DONE = range(5)
 
+profile_message_query = None
+
 # Task details
 TASKS = {
     "task_pushups": {"base": 10, "difficulty": 1.0},
@@ -49,7 +53,7 @@ TASKS = {
     "task_diamond_pushups": {"base": 5, "difficulty": 1.2},
     "task_lunges": {"base": 10, "difficulty": 0.9},
     "task_plank": {"base": 30, "difficulty": 0.7, "is_time": True},
-    "task_mountain_climbers": {"base": 20, "difficulty": 0.9},
+    "task_mountain_climbers": {"base": 16, "difficulty": 0.9},
     "task_high_knees": {"base": 30, "difficulty": 0.5, "is_time": True},
     "task_jump_squats": {"base": 10, "difficulty": 1.1},
     "task_crunches": {"base": 20, "difficulty": 0.7},
@@ -105,6 +109,9 @@ async def send_profile(query, context, user_id):
     )
     await query.edit_message_text(text=profile_text, reply_markup=reply_markup, parse_mode=ParseMode.HTML)
 
+    global profile_message_query
+    profile_message_query = query
+
 
 async def add_friends(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
     query = update.callback_query
@@ -124,10 +131,10 @@ async def get_tasks(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
     lang = context.user_data.get('lang', 'en')
     translation = translations[lang]
 
-    for i, (task_code, number) in enumerate(tasks):
+    for i, (task_code, number, created_at) in enumerate(tasks):
         task_text = translation[task_code].format(number=number)
         task_buttons = [
-            [InlineKeyboardButton(translation['task_done'], callback_data=f"DONE_{i}")]
+            [InlineKeyboardButton(translation['task_done'], callback_data=f"MARK_TASK_DONE_{i}")]
         ]
         reply_markup = InlineKeyboardMarkup(task_buttons)
         await query.message.reply_text(text=task_text, reply_markup=reply_markup, parse_mode=ParseMode.HTML)
@@ -145,21 +152,56 @@ def create_daily_tasks(user_id):
         base_amount = task_info['base']
         difficulty = task_info['difficulty']
         is_time = task_info.get('is_time', False)
-        amount = int(base_amount * difficulty * strength_modifier * random.uniform(0.8, 1.5))
+        ran = random.uniform(0.8, 1.5)
+        amount = int(base_amount * difficulty * strength_modifier * ran)
+        multiplier = difficulty * strength_modifier * ran
+        created_at = int(datetime.now().timestamp())
 
-        add_task(user_id, task_key, amount)
+        add_task(user_id, task_key, amount, multiplier, created_at)
 
 
 async def mark_task_done_handler(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
     query = update.callback_query
     await query.answer()
+
+    # Extract task index from callback data
+    task_index = int(query.data.split('_')[3])
+
     user_id = query.from_user.id
-    task_index = int(query.data.split('_')[1])
     tasks = get_today_tasks(user_id)
-    task_id = tasks[task_index][0]
-    mark_task_done(user_id, task_id)
-    update_user_points_and_streak(user_id)
-    await send_profile(query, context, user_id)
+    task_code, number, multiplier = tasks[task_index]
+
+    # Get language and translation
+    lang = context.user_data.get('lang', 'en')
+    translation = translations[lang]
+
+    # Replace message with 'text_completed' string via lang
+    await query.edit_message_text(text=translation['task_done'], parse_mode=ParseMode.HTML)
+
+    await add_points_for_task(multiplier, task_code, user_id)
+
+    # Mark task in db
+    mark_task_done(user_id, task_code)
+
+    global profile_message_query
+    if profile_message_query is None:
+        await send_profile(query, context, user_id)
+    else:
+        # noinspection PyTypeChecker
+        await send_profile(profile_message_query, context, user_id)
+        # delete message after 3 seconds
+        await asyncio.sleep(3)
+        await query.message.delete()
+
+
+async def add_points_for_task(multiplier, task_code, user_id):
+    # Add points of completed task to user
+    user = get_user(user_id)
+    task_info = TASKS[task_code]
+    points = int(25 * multiplier * user['strength_modifier'] * (1+(log(user['streak']+1, 1.1))))
+    user['points'] += points
+    user['tasks_completed'] += 1
+    update_user(user_id, user['points'], user['streak'], user['tasks_completed'])
 
 
 def update_user_points_and_streak(user_id):
@@ -215,7 +257,7 @@ def main() -> None:
             SHOWING_PROFILE: [
                 CallbackQueryHandler(add_friends, pattern=f"^{ADD_FRIENDS}$"),
                 CallbackQueryHandler(get_tasks, pattern=f"^{GET_TASKS}$"),
-                CallbackQueryHandler(mark_task_done_handler, pattern=f"^{MARK_TASK_DONE}_\\d+$"),
+                CallbackQueryHandler(mark_task_done_handler, pattern=f"^MARK_TASK_DONE_\\d+$"),
             ],
         },
         fallbacks=[CommandHandler("start", start)],
