@@ -14,6 +14,8 @@ def generate_referral_link(user_id):
 
 def handle_invite_code(invite_code, user_id):
     code = decrypt_number(invite_code)
+    if code == user_id:
+        return
     accept_friend(code, user_id)
 
 
@@ -26,7 +28,7 @@ async def add_friends(update: Update, context: ContextTypes.DEFAULT_TYPE) -> Non
     lang = context.user_data.get('lang', 'en')
     translation = translations[lang]
     if len(friends) == 0:
-        friends_text = translation['no_friends'] + "\n\n" + translation['referral_link'] + referral_link
+        friends_text = translation['no_friends'] + "\n\n" + translation['referral_link'] + "\n<code>" + referral_link + "</code>"
     else:
         friends_text = translation['your_friends'] + "\n" + "\n" + friends_list(friends, user_id) + "\n\n" + \
                        translation['referral_link'] + "\n<code>" + referral_link + "</code>"
