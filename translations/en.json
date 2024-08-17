@@ -23,5 +23,12 @@
 
     "your_friends": "👥 Your friends:",
     "no_friends": "🤨 You don't have any friends yet. Add them to compete🤼‍♀️ and motivate each other!",
-    "referral_link": "➕ <b>Add new friends! Just copy and send them next <u>link</u>:</b> "
+    "referral_link": "➕ <b>Add new friends! Just copy and send them next <u>link</u>:</b> ",
+
+    "welcome_message_1": "\uD83D\uDC4B I am here to help you stay in shape by offering tasks with gradually increasing difficulty",
+    "welcome_message_2": "\uD83E\uDEF5 You can invite friends and track each other's activities",
+    "welcome_message_3": "\uD83E\uDD2B No one but you will know if you are actually completing the tasks. So, it is up to you to perform the tasks I suggest with quality and responsibility. \uD83E\uDEE1",
+    "agree_button_1": "Okay",
+    "agree_button_2": "Got it!",
+    "agree_button_3": "I agree to be honest with myself 💖"
 }

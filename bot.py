@@ -4,7 +4,7 @@ from datetime import datetime
 import random
 from math import log
 
-from telegram import Update, InlineKeyboardButton, InlineKeyboardMarkup
+from telegram import Update, InlineKeyboardButton, InlineKeyboardMarkup, CallbackQuery
 from telegram.constants import ParseMode
 from telegram.ext import (
     Application,
@@ -14,10 +14,10 @@ from telegram.ext import (
     ConversationHandler
 )
 
-from friends import add_friends, handle_invite_code
+from friends import add_friends, handle_invite_code, get_user_rank
 from translations import translations
 from db import init_db, add_user, get_user, get_leaderboard, update_user, get_today_tasks, add_task, mark_task_done, \
-    get_streak_timestamp, update_streak_timestamp
+    get_streak_timestamp, update_streak_timestamp, is_user_exist
 
 # Enable logging
 logging.basicConfig(
@@ -49,8 +49,18 @@ TASKS = {
 async def start(update: Update, context: ContextTypes.DEFAULT_TYPE) -> int:
     user = update.message.from_user
     logger.info("User %s started the conversation.", user.first_name)
+
+    user_id = user.id
+    existing_user = is_user_exist(user_id)
+
     if context.args:
-        handle_invite_code(context.args[0], user.id)
+        handle_invite_code(context.args[0], user_id)
+
+    if existing_user and context.args:
+        await send_profile(update.message, context, user_id, edit_message=False)
+        await update.message.delete()
+        return SHOWING_PROFILE
+
     keyboard = [
         [InlineKeyboardButton("🇺🇸 English", callback_data=str(LANG_EN))],
         [InlineKeyboardButton("🇷🇺 Русский", callback_data=str(LANG_RU))]
@@ -58,6 +68,9 @@ async def start(update: Update, context: ContextTypes.DEFAULT_TYPE) -> int:
     reply_markup = InlineKeyboardMarkup(keyboard)
     await update.message.reply_text('Please choose your language\nПожалуйста, выберите ваш язык:',
                                     reply_markup=reply_markup)
+    # Delete the /start message
+    await update.message.delete()
+
     return SELECTING_LANGUAGE
 
 
@@ -68,15 +81,35 @@ async def select_language(update: Update, context: ContextTypes.DEFAULT_TYPE) ->
     context.user_data['lang'] = 'en' if lang == LANG_EN else 'ru'
     user_id = query.from_user.id
     add_user(user_id, query.from_user.first_name, context.user_data['lang'])
-    await send_profile(query, context, user_id)
+
+    await send_welcome_messages(query, context, user_id, 1)
     return SHOWING_PROFILE
 
 
-def get_user_rank(user_id):
-    return "coming soon"
+async def send_welcome_messages(query, context, user_id, message_number):
+    lang = context.user_data.get('lang', 'en')
+    translation = translations[lang]
+    welcome_message = translation[f'welcome_message_{message_number}']
+    agree_button_text = translation[f'agree_button_{message_number}']
+    keyboard = [
+        [InlineKeyboardButton(agree_button_text, callback_data=f"AGREE_{message_number}")]
+    ]
+    reply_markup = InlineKeyboardMarkup(keyboard)
+    await query.edit_message_text(text=welcome_message, reply_markup=reply_markup, parse_mode=ParseMode.HTML)
 
 
-async def send_profile(query, context, user_id):
+async def handle_welcome_message(update: Update, context: ContextTypes.DEFAULT_TYPE) -> int:
+    query = update.callback_query
+    await query.answer()
+    message_number = int(query.data.split('_')[1])
+    if message_number < 3:
+        await send_welcome_messages(query, context, query.from_user.id, message_number + 1)
+    else:
+        await send_profile(query, context, query.from_user.id)
+    return SHOWING_PROFILE
+
+
+async def send_profile(query, context, user_id, edit_message=True):
     user = get_user(user_id)
     lang = context.user_data.get('lang', 'en')
     translation = translations[lang]
@@ -92,7 +125,11 @@ async def send_profile(query, context, user_id):
         tasks_completed=user['tasks_completed'],
         rank=get_user_rank(user_id)
     )
-    await query.edit_message_text(text=profile_text, reply_markup=reply_markup, parse_mode=ParseMode.HTML)
+    if isinstance(query, CallbackQuery) and edit_message:
+        await query.edit_message_text(text=profile_text, reply_markup=reply_markup, parse_mode=ParseMode.HTML)
+    else:
+        await context.bot.send_message(chat_id=user_id, text=profile_text, reply_markup=reply_markup,
+                                       parse_mode=ParseMode.HTML)
 
     global profile_message_queries
     profile_message_queries[user_id] = query
@@ -140,6 +177,7 @@ def create_daily_tasks(user_id):
 
 
 async def mark_task_done_handler(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
+    logger.info("User %s done task.", update.callback_query.from_user.first_name)
     query = update.callback_query
     await query.answer()
 
@@ -221,17 +259,6 @@ def check_new_streak(user_id):
     update_streak_timestamp(user_id, current_timestamp)
 
 
-async def leaderboard(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
-    user_id = update.message.from_user.id
-    leaderboard = get_leaderboard()
-    lang = context.user_data.get('lang', 'en')
-    translation = translations[lang]
-    leaderboard_text = translation['leaderboard_header'] + "\n"
-    for rank, user in enumerate(leaderboard, start=1):
-        leaderboard_text += f"{rank}. {user['username']} - {user['points']} points, streak: {user['streak']}\n"
-    await update.message.reply_text(leaderboard_text)
-
-
 def read_token_from_file(file_name='token'):
     try:
         with open(file_name, 'r') as file:
@@ -247,6 +274,11 @@ async def go_profile(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None
     await query.answer()
     user_id = query.from_user.id
     await send_profile(query, context, user_id)
+
+
+async def profile_command(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
+    user_id = update.message.from_user.id
+    await send_profile(update.message, context, user_id)
 
 
 def main() -> None:
@@ -266,13 +298,14 @@ def main() -> None:
                 CallbackQueryHandler(get_tasks, pattern=f"^{GET_TASKS}$"),
                 CallbackQueryHandler(mark_task_done_handler, pattern=f"^MARK_TASK_DONE_\\d+$"),
                 CallbackQueryHandler(go_profile, pattern="^GO_PROFILE$"),
+                CallbackQueryHandler(handle_welcome_message, pattern="^AGREE_\\d+$"),
             ],
         },
         fallbacks=[CommandHandler("start", start)],
     )
 
     application.add_handler(conv_handler)
-    application.add_handler(CommandHandler("leaderboard", leaderboard))
+    application.add_handler(CommandHandler("profile", profile_command))
 
     application.run_polling()
 

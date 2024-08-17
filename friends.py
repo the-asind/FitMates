@@ -4,7 +4,7 @@ from telegram.ext import ContextTypes
 
 from encryption import encrypt_number, decrypt_number
 from translations import translations
-from db import get_friends, accept_friend, get_user
+from db import get_friends, accept_friend, get_user, is_user_exist
 
 
 def generate_referral_link(user_id):
@@ -16,7 +16,8 @@ def handle_invite_code(invite_code, user_id):
     code = decrypt_number(invite_code)
     if code == user_id:
         return
-    accept_friend(code, user_id)
+    if is_user_exist(code):
+        accept_friend(code, user_id)
 
 
 async def add_friends(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
@@ -55,3 +56,17 @@ def friends_list(friends, current_user_id):
         else:
             friends_text += f"{index}. {username} {streak_text}  💪 {points}\n"
     return friends_text
+
+
+def get_user_rank(user_id):
+    friends = get_friends(user_id)
+    current_user = get_user(user_id)
+    current_user = [current_user['username'], current_user['points'], current_user['streak']]
+    friends.append(current_user)
+    friends_sorted = sorted(friends, key=lambda x: x[1], reverse=True)  # Sort by points
+    rank = 1
+    for index, friend in enumerate(friends_sorted, start=1):
+        if friend[0] == current_user[0]:
+            rank = index
+            break
+    return rank

@@ -64,6 +64,14 @@ def get_user(id):
     }
 
 
+def is_user_exist(user_id):
+    conn = sqlite3.connect('fitness_bot.db')
+    c = conn.cursor()
+    c.execute('SELECT * FROM users WHERE id = ?', (user_id,))
+    user = c.fetchone()
+    conn.close()
+    return user is not None
+
 def get_leaderboard():
     with sqlite3.connect("fitness_bot.db") as conn:
         cursor = conn.cursor()
