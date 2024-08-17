@@ -29,7 +29,7 @@ logger = logging.getLogger(__name__)
 SELECTING_LANGUAGE, SHOWING_PROFILE = range(2)
 LANG_EN, LANG_RU, ADD_FRIENDS, GET_TASKS, MARK_TASK_DONE = range(5)
 
-profile_message_query = None
+profile_message_queries = {}
 
 # Task details
 TASKS = {
@@ -94,8 +94,8 @@ async def send_profile(query, context, user_id):
     )
     await query.edit_message_text(text=profile_text, reply_markup=reply_markup, parse_mode=ParseMode.HTML)
 
-    global profile_message_query
-    profile_message_query = query
+    global profile_message_queries
+    profile_message_queries[user_id] = query
 
 
 async def get_tasks(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
@@ -176,12 +176,10 @@ async def mark_task_done_handler(update: Update, context: ContextTypes.DEFAULT_T
     mark_task_done(user_id, task_code)
 
     global profile_message_query
-    if profile_message_query is None:
+    if user_id not in profile_message_queries:
         await send_profile(query, context, user_id)
     else:
-        # noinspection PyTypeChecker
-        await send_profile(profile_message_query, context, user_id)
-        # delete message after 3 seconds
+        await send_profile(profile_message_queries[user_id], context, user_id)
         await delete_message_later(query, 3)
 
 
