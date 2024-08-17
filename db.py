@@ -144,10 +144,10 @@ def get_friends(user_id):
     conn = sqlite3.connect('fitness_bot.db')
     cursor = conn.cursor()
     cursor.execute('''
-        SELECT u.username FROM friends f
+        SELECT u.username, u.points, u.streak FROM friends f
         JOIN users u ON (f.friend_id = u.id OR f.user_id = u.id)
         WHERE (f.user_id = ? OR f.friend_id = ?) AND u.id != ?
     ''', (user_id, user_id, user_id))
     friends = cursor.fetchall()
     conn.close()
-    return [friend[0] for friend in friends]
+    return friends
